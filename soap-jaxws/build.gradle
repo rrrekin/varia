@@ -1,0 +1,78 @@
+plugins {
+    id 'groovy'
+    id 'java'
+    id 'idea'
+//    id "uk.co.boothen.gradle.wsimport" version "0.9"
+//    id "me.seeber.gradle-wsimport-plugin" version "1.1.0"
+//    id 'com.github.jacobono.wsdl' version '1.7.8'
+//    id "cz.swsamuraj.jaxws" version "0.6.1"
+    id "no.nils.wsdl2java" version "0.10"
+
+}
+
+group 'net.in.rrrekin'
+version '1.0-SNAPSHOT'
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+}
+
+sourceSets {
+//    generated.java.source = ['src/generated/java']
+
+    main.java.srcDirs += 'src/generated/java'
+
+}
+
+dependencies {
+    implementation "org.codehaus.groovy:groovy-all:2.5.7"
+//    compile 'javax.xml.bind:jaxb-api:2.3.1'
+
+    compile 'org.jvnet.jaxb2_commons:jaxb2-basics-runtime:0.11.0'
+    wsdl2java 'com.sun.xml.bind:jaxb-xjc:2.3.0.1'
+    wsdl2java 'javax.xml.bind:jaxb-api:2.3.1'
+    wsdl2java 'javax.xml.ws:jaxws-api:2.3.1'
+    wsdl2java 'org.apache.cxf:cxf-rt-wsdl:3.2.7'
+    wsdl2java 'javax.jws:javax.jws-api:1.1'
+
+    implementation 'com.sun.xml.bind:jaxb-xjc:2.3.0.1'
+    implementation 'javax.xml.bind:jaxb-api:2.3.1'
+    implementation 'javax.xml.ws:jaxws-api:2.3.1'
+    implementation 'org.apache.cxf:cxf-rt-wsdl:3.2.7'
+    implementation 'javax.jws:javax.jws-api:1.1'
+    compile 'com.sun.xml.ws:rt:2.+'
+
+    // enable extension support for wsdl2java
+    wsdl2java 'org.jvnet.jaxb2_commons:jaxb2-basics-runtime:0.11.0'
+    wsdl2java 'org.jvnet.jaxb2_commons:jaxb2-basics:0.11.0'
+
+    testImplementation group: 'junit', name: 'junit', version: '4.12'
+    testImplementation "org.spockframework:spock-core:1.3-groovy-2.5"
+    testImplementation "org.hamcrest:hamcrest-core:1.3" // only necessary if Hamcrest matchers are used
+    testImplementation "net.bytebuddy:byte-buddy:1.9.3"          // allows mocking of classes (in addition to interfaces)
+    testRuntime "org.objenesis:objenesis:2.6"    // allows mocking of classes without default constructor (together with CGLIB)
+
+}
+
+wsdl2java {
+    generatedWsdlDir = file("$projectDir/src/generated/java")
+    wsdlDir = file("$projectDir/src/main/resources/META-INF/wsdl") // define to support incremental build
+    wsdlsToGenerate = [   //  2d-array of wsdls and cxf-parameters
+                          ['-xjc-Xequals', '-xjc-XhashCode', '-xjc-XtoString', "$projectDir/src/main/resources/META-INF/wsdl/SOAP.Demo.wsdl"],
+//            ["$projectDir/src/main/resources/META-INF/wsdl/XMLSchema.xsd"],
+//                          ['-xjc','-b','bindingfile.xml','src/main/resources/wsdl/secondwsdl.wsdl']
+    ]
+}
+
+//tasks.withType(Checkstyle) {
+//    exclude '**/src/generated/**'
+//}
+
+test {
+    systemProperty "com.sun.xml.ws.transport.http.client.HttpTransportPipe.dump", "true"
+    systemProperty "com.sun.xml.internal.ws.transport.http.client.HttpTransportPipe.dump", "true"
+    systemProperty "com.sun.xml.ws.transport.http.HttpAdapter.dump", "true"
+    systemProperty "com.sun.xml.internal.ws.transport.http.HttpAdapter.dump", "true"
+}

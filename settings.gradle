@@ -4,4 +4,5 @@ include 'rest-okhttp'
 include 'rest-soap-ws-lite'
 include 'rest-http-builder'
 include 'spring-boot-testing'
+include 'soap-jaxws'
 

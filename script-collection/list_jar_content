@@ -1,0 +1,84 @@
+#!/bin/bash
+
+infile="$1"
+[ -n "$infile" -a "$infile" = "-s" ] && short=1 && infile="$2"
+
+outfile="$(basename "$infile").report.txt"
+
+getlist() {
+        IFS=$'\n'
+        for file in $(find . -iname 'foo*') ; do
+                printf 'File found: %s\n' "$file"
+        done
+}
+
+function separator() {
+    echo >> "$outfile"
+    echo "========================" >> "$outfile"
+    echo "$1" >> "$outfile"
+    echo "========================" >> "$outfile"
+    echo >> "$outfile"
+}
+
+echo > "$outfile"
+
+separator "FMX contents"
+
+unzip -l "$infile"|tail -n+4|head -n-2|cut -b-10,31-|sort -k2 >>  "$outfile"
+
+separator "Manifest"
+unzip -p "$infile" "META-INF/MANIFEST.MF"|dos2unix >> "$outfile"
+
+# extract files
+
+tempdir=`mktemp -d`
+
+unzip -d "$tempdir" "$infile"
+
+separator "File contents"
+
+find "$tempdir" -type f | sort | while read f
+do
+    fn=`basename "$f"`
+    filetype="${fn##*.}"
+    [ "$fn" = "$filetype" ] && filetype=""
+    
+    separator "File '$fn' $filetype"
+    
+    case "${filetype^^}" in
+        "JAR" | "WAR")
+            unzip -l "$f"|tail -n+4|head -n-2|cut -b-10,31-|sort -k2 >>  "$outfile"
+            separator "$fn Manifest"
+            unzip -p "$f" "META-INF/MANIFEST.MF"|dos2unix >> "$outfile"
+            ;;
+        "PROPERTIES" | "MF" | "XML" | "SVG" | "JS" | "CSS" | "HTM" | "HTML" | "JSP" | "JSON" | "SH" )
+            cat "$f"|dos2unix >> "$outfile"
+            ;;
+        "GIF" | "JPEG" | "JPG" | "PNG")
+            md5sum "$f" | awk '//{print $1}' >> "$outfile"
+            ;;
+        "CLASS")
+            if [ -v $short ]
+            then
+                procyon  -ei -eta "$f" >> "$outfile"
+            else
+                md5sum "$f" | awk '//{print $1}' >> "$outfile"
+            fi
+            ;;
+        *)
+            ftype=$(file -b "$f")
+            if [[ $ftype == *text* ]]
+            then
+                cat "$f"|dos2unix >> "$outfile"
+            else
+                echo "Filetype '$filetype' not supported" >> "$outfile"
+                echo "$ftype" >> "$outfile"
+                md5sum "$f" | awk '//{print $1}' >> "$outfile"
+            fi
+            ;;
+    esac
+
+done
+
+
+rm -rf "$tempdir"
